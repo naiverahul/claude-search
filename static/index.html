@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claude Web Search</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-900">
+  <div class="min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="w-full max-w-xl bg-white rounded-2xl shadow-xl p-8">
+      <h1 class="text-2xl font-semibold mb-6 text-center">🔍 Claude Search</h1>
+      <form id="searchForm" class="flex flex-col gap-4">
+        <input 
+          type="text" 
+          id="query" 
+          placeholder="Ask anything..." 
+          class="border border-gray-300 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+          required
+        />
+        <button 
+          type="submit" 
+          class="bg-blue-500 text-white py-2 rounded-xl hover:bg-blue-600 transition"
+        >Search</button>
+      </form>
+      <div id="results" class="mt-6 space-y-4"></div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("searchForm");
+    const resultsDiv = document.getElementById("results");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const query = document.getElementById("query").value;
+
+      resultsDiv.innerHTML = `<p class='text-gray-500 text-sm'>Searching for "${query}"...</p>`;
+
+      try {
+        const response = await fetch("http://localhost:5001/tool_call", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: "fetch_web_content", parameters: { query } })
+        });
+
+        const data = await response.json();
+        if (data.results && data.results.length > 0) {
+          resultsDiv.innerHTML = data.results.map(result => `
+            <div class="p-4 border rounded-xl bg-gray-50">
+              <a href="${result.url}" target="_blank" class="text-blue-600 text-lg font-medium hover:underline">${result.title}</a>
+              <p class="text-sm mt-1 text-gray-700">${result.description}</p>
+            </div>
+          `).join("");
+        } else {
+          resultsDiv.innerHTML = `<p class='text-gray-500'>No results found.</p>`;
+        }
+      } catch (error) {
+        resultsDiv.innerHTML = `<p class='text-red-500'>Error fetching results. Please try again.</p>`;
+        console.error(error);
+      }
+    });
+  </script>
+</body>
+</html>
